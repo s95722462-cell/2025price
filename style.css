@@ -115,3 +115,12 @@ h1 {
         font-size: 1.5rem;
     }
 }
+
+/* Align price columns to the right */
+.table tbody td[data-label="변경전 가격"],
+.table tbody td[data-label="변경후 가격"],
+.table tbody td.price-5,
+.table tbody td.price-10,
+.table tbody td.price-15 {
+    text-align: right;
+}
