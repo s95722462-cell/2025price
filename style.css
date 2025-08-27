@@ -1,0 +1,117 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+.container {
+    max-width: 960px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+h1 {
+    color: #0056b3;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.input-group .form-control {
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+
+.input-group .btn {
+    border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.table thead th {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Price value colors */
+.table tbody td.price-normal { color: black; }
+.table tbody td.price-5 { color: red; }
+.table tbody td.price-10 { color: green; }
+.table tbody td.price-15 { color: blue; }
+
+/* Header background colors */
+.table thead th.price-5 {
+    background-color: #d9534f; /* Red */
+}
+.table thead th.price-10 {
+    background-color: #5cb85c; /* Green */
+}
+.table thead th.price-15 {
+    background-color: #428bca; /* Blue */
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        margin-top: 15px;
+        margin-bottom: 15px;
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    .table-responsive {
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+    }
+
+    .table thead {
+        display: none; /* Hide table headers on small screens */
+    }
+
+    .table tbody tr {
+        display: block;
+        margin-bottom: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 10px;
+        background-color: #fff;
+    }
+
+    .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .table tbody td[colspan] {
+        display: block !important;
+        text-align: left !important;
+    }
+
+    .table tbody td:last-child {
+        border-bottom: none;
+    }
+
+    .table tbody td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-right: 10px;
+        color: #0056b3;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+}
