@@ -20,9 +20,40 @@
             <span class="badge bg-primary mt-2 mt-sm-0">UPDATED</span>
         </div>
 
-        <div class="input-group mb-4">
+        <!-- 단일 검색 (부분 일치) -->
+        <div class="input-group mb-2">
             <input type="text" id="searchInput" class="form-control" placeholder="제품 규격 검색 (예: CPU)">
             <button class="btn btn-primary" id="searchButton">검색</button>
+            <button class="btn btn-outline-secondary" id="multiToggleButton" type="button" data-bs-toggle="collapse" data-bs-target="#multiSearchBox" aria-expanded="false" aria-controls="multiSearchBox">다중 입력창</button>
+        </div>
+
+        <!-- 다중 검색 (정확히 일치, 최대 10개) -->
+        <div class="collapse mb-4" id="multiSearchBox">
+            <div class="card card-body">
+                <h6 class="mb-2">다중 규격 검색 (최대 10개, 정확히 일치)</h6>
+                <textarea id="multiSearchInput" class="form-control mb-2" rows="4" placeholder="예: PGX-044-H-003, PDM-020-N-120"></textarea>
+                <div class="alert alert-warning py-2 mb-2 d-none" id="multiSearchWarning"></div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn btn-outline-secondary" id="multiResetButton" type="button">초기화</button>
+                    <button class="btn btn-primary" id="multiSearchButton" type="button">검색 실행</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-warning py-2 d-none" id="notFoundBox" role="alert"></div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+            <button class="btn btn-outline-secondary" id="copyAllButton" type="button">검색결과 전체 복사</button>
+            <div class="d-flex align-items-center gap-2 ms-sm-auto">
+                <label for="priceTypeSelect" class="form-label mb-0">복사할 가격</label>
+                <select id="priceTypeSelect" class="form-select form-select-sm" style="width:auto;">
+                    <option value="변경후 가격" selected>변경후 가격</option>
+                    <option value="-5%">-5%</option>
+                    <option value="-10%">-10%</option>
+                    <option value="-15%">-15%</option>
+                    <option value="변경전 가격">변경전 가격</option>
+                </select>
+            </div>
         </div>
 
         <div class="table-responsive">
@@ -36,6 +67,7 @@
                         <th class="price-5">-5%</th>
                         <th class="price-10">-10%</th>
                         <th class="price-15">-15%</th>
+                        <th>복사</th>
                     </tr>
                 </thead>
                 <tbody id="resultsTableBody">
