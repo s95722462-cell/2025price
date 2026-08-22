@@ -13,10 +13,15 @@
 
         <div class="alert alert-info d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4" role="alert">
             <div>
-                <strong>가격표 기준일: 2026-05-15</strong>
-                <span class="d-block d-sm-inline ms-sm-2">PLC 품목 147건 가격 변경, 신규 57건 추가 반영</span>
+                <strong id="priceBaseDate">가격표 기준일: 2026-05-15</strong>
+                <span class="d-block d-sm-inline ms-sm-2" id="priceUpdateSummary">PLC 품목 147건 가격 변경, 신규 57건 추가 반영</span>
             </div>
-            <span class="badge bg-primary mt-2 mt-sm-0">UPDATED</span>
+            <button type="button" class="btn btn-primary btn-sm mt-2 mt-sm-0" id="updateHistoryBtn"
+                data-bs-toggle="popover" data-bs-placement="bottom" data-bs-html="true"
+                data-bs-custom-class="update-history-popover"
+                title="가격표 변경 이력">
+                UPDATED <span class="badge bg-light text-primary ms-1" id="updateCountBadge">1</span>
+            </button>
         </div>
 
         <!-- 단일 검색 (부분 일치) -->

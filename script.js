@@ -1,4 +1,55 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ========== 가격표 변경 이력 (새 항목을 배열 맨 위에 추가) ==========
+    // date: 기준일, summary: 상단 한 줄 요약, detail: 풍선에 보일 상세 설명
+    const UPDATE_HISTORY = [
+        {
+            date: '2026-05-15',
+            summary: 'PLC 품목 147건 가격 변경, 신규 57건 추가 반영',
+            detail: 'PLC 품목 147건 가격 변경, 신규 57건 추가 반영'
+        }
+        // 예시 — 나중에 이렇게 위에 추가:
+        // {
+        //     date: '2026-08-01',
+        //     summary: '인버터 품목 32건 가격 인상',
+        //     detail: 'FR-E700 / FR-D700 시리즈 32건 가격 인상 반영'
+        // },
+    ];
+
+    // 상단 배너 + 풍선 내용 반영
+    function initUpdateHistory() {
+        if (!UPDATE_HISTORY.length) return;
+        const latest = UPDATE_HISTORY[0];
+        const dateEl = document.getElementById('priceBaseDate');
+        const summaryEl = document.getElementById('priceUpdateSummary');
+        const badgeEl = document.getElementById('updateCountBadge');
+        const btn = document.getElementById('updateHistoryBtn');
+
+        if (dateEl) dateEl.textContent = `가격표 기준일: ${latest.date}`;
+        if (summaryEl) summaryEl.textContent = latest.summary;
+        if (badgeEl) badgeEl.textContent = String(UPDATE_HISTORY.length);
+
+        if (btn && window.bootstrap) {
+            const bodyHtml = UPDATE_HISTORY.map(item => `
+                <div class="history-item">
+                    <div class="history-date">${item.date}</div>
+                    <div class="history-desc">${item.detail || item.summary}</div>
+                </div>
+            `).join('');
+            new bootstrap.Popover(btn, {
+                html: true,
+                trigger: 'click',
+                container: 'body',
+                content: bodyHtml || '변경 이력이 없습니다.'
+            });
+            // 바깥 클릭 시 닫기
+            document.addEventListener('click', (e) => {
+                if (!btn.contains(e.target) && !document.querySelector('.update-history-popover')?.contains(e.target)) {
+                    bootstrap.Popover.getInstance(btn)?.hide();
+                }
+            });
+        }
+    }
+
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
     const resultsTableBody = document.getElementById('resultsTableBody');
@@ -405,5 +456,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (copyKakaoTextButton) copyKakaoTextButton.addEventListener('click', handleCopyKakaoText);
     if (copyKakaoImageButton) copyKakaoImageButton.addEventListener('click', handleCopyKakaoImage);
 
+    initUpdateHistory();
     fetchProducts();
 });
