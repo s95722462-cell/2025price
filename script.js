@@ -249,19 +249,22 @@ document.addEventListener('DOMContentLoaded', () => {
             price: String(resolvePrice(p, field))
         }));
 
-        const padding = 16;
-        const rowHeight = 36;
-        const headerHeight = 40;
-        const colNoWidth = 50;
-        const colSpecWidth = 220;
-        const colPriceWidth = 120;
+        // 다중 검색(10건) 기준 고정 크기로 통일 — 1건이어도 같은 사진 크기
+        const padding = 20;
+        const rowHeight = 42;
+        const headerHeight = 46;
+        const colNoWidth = 60;
+        const colSpecWidth = 280;
+        const colPriceWidth = 150;
         const tableWidth = colNoWidth + colSpecWidth + colPriceWidth;
-        const tableHeight = headerHeight + rows.length * rowHeight;
+        const FIXED_ROWS = 10; // 다중 검색 최대 건수와 동일
+        const bodyRows = FIXED_ROWS;
+        const tableHeight = headerHeight + bodyRows * rowHeight;
         const canvasWidth = tableWidth + padding * 2;
         const canvasHeight = tableHeight + padding * 2;
 
         const canvas = document.createElement('canvas');
-        const scale = 2;
+        const scale = 3; // 카톡에서 작게 보이지 않도록 고해상도
         canvas.width = canvasWidth * scale;
         canvas.height = canvasHeight * scale;
         const ctx = canvas.getContext('2d');
@@ -277,14 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(startX, startY, tableWidth, headerHeight);
 
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+        ctx.font = 'bold 18px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('No.', startX + colNoWidth / 2, startY + headerHeight / 2);
         ctx.fillText('규격', startX + colNoWidth + colSpecWidth / 2, startY + headerHeight / 2);
         ctx.fillText('단가', startX + colNoWidth + colSpecWidth + colPriceWidth / 2, startY + headerHeight / 2);
 
-        ctx.font = '14px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+        ctx.font = '16px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
         rows.forEach((row, i) => {
             const y = startY + headerHeight + i * rowHeight;
             if (i % 2 === 1) {
@@ -312,19 +315,27 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(row.price, startX + colNoWidth + colSpecWidth + colPriceWidth - 10, y + rowHeight / 2);
         });
 
+        // 빈 행 교차 배경 (크기 통일을 위한 여백)
+        for (let i = rows.length; i < bodyRows; i++) {
+            const y = startY + headerHeight + i * rowHeight;
+            if (i % 2 === 1) {
+                ctx.fillStyle = '#f5f8fc';
+                ctx.fillRect(startX, y, tableWidth, rowHeight);
+            } else {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(startX, y, tableWidth, rowHeight);
+            }
+        }
+
         ctx.strokeStyle = '#333333';
         ctx.lineWidth = 1;
-        for (let i = 0; i <= rows.length + 1; i++) {
+        for (let i = 0; i <= bodyRows + 1; i++) {
             const y = startY + (i === 0 ? 0 : headerHeight + (i - 1) * rowHeight);
             ctx.beginPath();
             ctx.moveTo(startX, y);
             ctx.lineTo(startX + tableWidth, y);
             ctx.stroke();
         }
-        ctx.beginPath();
-        ctx.moveTo(startX, startY + tableHeight);
-        ctx.lineTo(startX + tableWidth, startY + tableHeight);
-        ctx.stroke();
 
         [0, colNoWidth, colNoWidth + colSpecWidth, tableWidth].forEach(cx => {
             ctx.beginPath();
