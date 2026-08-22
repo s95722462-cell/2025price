@@ -230,9 +230,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const field = getSelectedPriceField();
-        // 탭(\t) 구분 → 엑셀 붙여넣기 시 규격 | 가격 서로 다른 칸
-        const lines = currentResults.map(p => `${p['규격'] || ''}\t${resolvePrice(p, field)}`);
-        const ok = await copyText(lines.join('\n'));
+        // text/plain: 탭 구분 (카톡·엑셀 공통)
+        const plain = currentResults.map(p => `${p['규격'] || ''}\t${resolvePrice(p, field)}`).join('\n');
+        // text/html: 엑셀이 열 너비를 더 잘 인식하도록 테이블 형식
+        const htmlRows = currentResults.map(p => {
+            const spec = String(p['규격'] || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            const price = String(resolvePrice(p, field)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            return `<tr><td style="padding:4px 12px;white-space:nowrap;">${spec}</td><td style="padding:4px 12px;white-space:nowrap;text-align:right;">${price}</td></tr>`;
+        }).join('');
+        const html = `<table><tbody>${htmlRows}</tbody></table>`;
+
+        let ok = false;
+        try {
+            if (navigator.clipboard && window.ClipboardItem) {
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/plain': new Blob([plain], { type: 'text/plain' }),
+                        'text/html': new Blob([html], { type: 'text/html' })
+                    })
+                ]);
+                ok = true;
+            } else {
+                ok = await copyText(plain);
+            }
+        } catch (err) {
+            console.error('카톡 값 복사 실패:', err);
+            ok = await copyText(plain);
+        }
         showCopyFeedback(copyKakaoTextButton, ok);
     }
 
@@ -249,22 +273,34 @@ document.addEventListener('DOMContentLoaded', () => {
             price: String(resolvePrice(p, field))
         }));
 
-        // 다중 검색(10건) 기준 고정 크기로 통일 — 1건이어도 같은 사진 크기
+        // 다중 검색(10건) 기준 고정 행 수 + 규격 길이에 따른 열 너비 자동 조정
         const padding = 20;
         const rowHeight = 42;
         const headerHeight = 46;
         const colNoWidth = 60;
-        const colSpecWidth = 280;
         const colPriceWidth = 150;
-        const tableWidth = colNoWidth + colSpecWidth + colPriceWidth;
-        const FIXED_ROWS = 10; // 다중 검색 최대 건수와 동일
+        const FIXED_ROWS = 10;
         const bodyRows = FIXED_ROWS;
+
+        // 임시 캔버스로 가장 긴 규격 텍스트 너비 측정
+        const measureCanvas = document.createElement('canvas');
+        const measureCtx = measureCanvas.getContext('2d');
+        measureCtx.font = '16px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+        let maxSpecTextWidth = measureCtx.measureText('규격').width;
+        rows.forEach(row => {
+            const w = measureCtx.measureText(row.spec).width;
+            if (w > maxSpecTextWidth) maxSpecTextWidth = w;
+        });
+        // 여유 패딩 포함, 최소 200 / 최대 420
+        const colSpecWidth = Math.min(420, Math.max(200, Math.ceil(maxSpecTextWidth) + 24));
+
+        const tableWidth = colNoWidth + colSpecWidth + colPriceWidth;
         const tableHeight = headerHeight + bodyRows * rowHeight;
         const canvasWidth = tableWidth + padding * 2;
         const canvasHeight = tableHeight + padding * 2;
 
         const canvas = document.createElement('canvas');
-        const scale = 3; // 카톡에서 작게 보이지 않도록 고해상도
+        const scale = 3;
         canvas.width = canvasWidth * scale;
         canvas.height = canvasHeight * scale;
         const ctx = canvas.getContext('2d');
@@ -303,13 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.fillText(row.no, startX + colNoWidth / 2, y + rowHeight / 2);
 
             ctx.textAlign = 'left';
-            let specText = row.spec;
-            const maxSpecWidth = colSpecWidth - 16;
-            while (ctx.measureText(specText).width > maxSpecWidth && specText.length > 3) {
-                specText = specText.slice(0, -1);
-            }
-            if (specText !== row.spec) specText += '…';
-            ctx.fillText(specText, startX + colNoWidth + 8, y + rowHeight / 2);
+            ctx.fillText(row.spec, startX + colNoWidth + 12, y + rowHeight / 2);
 
             ctx.textAlign = 'right';
             ctx.fillText(row.price, startX + colNoWidth + colSpecWidth + colPriceWidth - 10, y + rowHeight / 2);
