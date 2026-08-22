@@ -230,7 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const field = getSelectedPriceField();
-        const lines = currentResults.map(p => `${p['규격'] || ''} ${resolvePrice(p, field)}`);
+        // 탭(\t) 구분 → 엑셀 붙여넣기 시 규격 | 가격 서로 다른 칸
+        const lines = currentResults.map(p => `${p['규격'] || ''}\t${resolvePrice(p, field)}`);
         const ok = await copyText(lines.join('\n'));
         showCopyFeedback(copyKakaoTextButton, ok);
     }
