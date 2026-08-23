@@ -270,8 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const headerHeight = 46;
         const colNoWidth = 60;
         const colPriceWidth = 150;
-        const FIXED_ROWS = 10;
-        const bodyRows = FIXED_ROWS;
+        const bodyRows = rows.length;
 
         // 임시 캔버스로 가장 긴 규격 텍스트 너비 측정
         const measureCanvas = document.createElement('canvas');
@@ -337,12 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // 빈 행 교차 배경 (크기 통일을 위한 여백)
-        for (let i = rows.length; i < bodyRows; i++) {
-            const y = startY + headerHeight + i * rowHeight;
-            if (i % 2 === 1) {
-                ctx.fillStyle = '#f5f8fc';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            } else {
+        // removed fixed blank rows else {
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(startX, y, tableWidth, rowHeight);
             }
