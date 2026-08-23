@@ -1,62 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ========== 가격표 변경 이력 (새 항목을 배열 맨 위에 추가) ==========
-    // date: 기준일, summary: 상단 한 줄 요약, detail: 풍선에 보일 상세 설명
-    const UPDATE_HISTORY = [
-        {
-            date: '2026-05-15',
-            summary: 'PLC 품목 147건 가격 변경, 신규 57건 추가 반영',
-            detail: 'PLC 품목 147건 가격 변경, 신규 57건 추가 반영'
-        }
-        // 예시 — 나중에 이렇게 위에 추가:
-        // {
-        //     date: '2026-08-01',
-        //     summary: '인버터 품목 32건 가격 인상',
-        //     detail: 'FR-E700 / FR-D700 시리즈 32건 가격 인상 반영'
-        // },
-    ];
-
-    // 상단 배너 + 풍선 내용 반영
-    function initUpdateHistory() {
-        if (!UPDATE_HISTORY.length) return;
-        const latest = UPDATE_HISTORY[0];
-        const dateEl = document.getElementById('priceBaseDate');
-        const summaryEl = document.getElementById('priceUpdateSummary');
-        const badgeEl = document.getElementById('updateCountBadge');
-        const btn = document.getElementById('updateHistoryBtn');
-
-        if (dateEl) dateEl.textContent = `가격표 기준일: ${latest.date}`;
-        if (summaryEl) summaryEl.textContent = latest.summary;
-        if (badgeEl) badgeEl.textContent = String(UPDATE_HISTORY.length);
-
-        if (btn && window.bootstrap) {
-            const bodyHtml = UPDATE_HISTORY.map(item => `
-                <div class="history-item">
-                    <div class="history-date">${item.date}</div>
-                    <div class="history-desc">${item.detail || item.summary}</div>
-                </div>
-            `).join('');
-            new bootstrap.Popover(btn, {
-                html: true,
-                trigger: 'click',
-                container: 'body',
-                content: bodyHtml || '변경 이력이 없습니다.'
-            });
-            // 바깥 클릭 시 닫기
-            document.addEventListener('click', (e) => {
-                if (!btn.contains(e.target) && !document.querySelector('.update-history-popover')?.contains(e.target)) {
-                    bootstrap.Popover.getInstance(btn)?.hide();
-                }
-            });
-        }
-    }
-
     const searchInput = document.getElementById('searchInput');
     const searchButton = document.getElementById('searchButton');
     const resultsTableBody = document.getElementById('resultsTableBody');
     const priceTypeSelect = document.getElementById('priceTypeSelect');
-    const copyAllButton = document.getElementById('copyAllButton');
-    const copyKakaoTextButton = document.getElementById('copyKakaoTextButton');
-    const copyKakaoImageButton = document.getElementById('copyKakaoImageButton');
 
     const multiSearchInput = document.getElementById('multiSearchInput');
     const multiSearchButton = document.getElementById('multiSearchButton');
@@ -67,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_MULTI_TERMS = 10;
 
     let allProducts = [];
-    let currentResults = [];
 
+    // Function to fetch product data
     async function fetchProducts() {
         try {
             const response = await fetch('price_data.json');
@@ -83,58 +29,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // 현재 선택된 '복사할 가격' 필드명 반환
     function getSelectedPriceField() {
         return priceTypeSelect ? priceTypeSelect.value : '변경후 가격';
     }
 
-    // 가격 값 조회 (변경후 가격이 없으면 가격 필드로 대체 — 구 데이터 호환)
-    function resolvePrice(product, field) {
-        if (!product) return '';
-        const val = product[field];
-        if (val !== undefined && val !== null && val !== '') return val;
-        if (field === '변경후 가격' && product['가격'] !== undefined && product['가격'] !== null && product['가격'] !== '') {
-            return product['가격'];
-        }
-        return '';
-    }
-
+    // 클립보드에 텍스트 복사
     async function copyText(text) {
         try {
             await navigator.clipboard.writeText(text);
             return true;
         } catch (err) {
             console.error('클립보드 복사 실패:', err);
-            try {
-                const ta = document.createElement('textarea');
-                ta.value = text;
-                ta.style.position = 'fixed';
-                ta.style.left = '-9999px';
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                return true;
-            } catch (e2) {
-                return false;
-            }
-        }
-    }
-
-    async function copyImageBlob(blob) {
-        try {
-            if (navigator.clipboard && window.ClipboardItem) {
-                await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': blob })
-                ]);
-                return true;
-            }
-            return false;
-        } catch (err) {
-            console.error('이미지 클립보드 복사 실패:', err);
             return false;
         }
     }
 
+    // 버튼에 복사 성공/실패 피드백 표시
     function showCopyFeedback(button, success) {
         const original = button.textContent;
         button.textContent = success ? '복사됨!' : '실패';
@@ -169,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
         multiSearchWarning.textContent = text;
     }
 
+    // Function to display products in the table
     function displayProducts(products) {
-        currentResults = products;
-        resultsTableBody.innerHTML = '';
+        resultsTableBody.innerHTML = ''; // Clear previous results
         if (products.length === 0) {
             resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-center">검색 결과가 없습니다.</td></tr>`;
             return;
@@ -183,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="구분">${product['구분'] || ''}</td>
                 <td data-label="규격">${product['규격'] || ''}</td>
                 <td data-label="변경전 가격">${product['변경전 가격'] || ''}</td>
-                <td data-label="변경후 가격">${resolvePrice(product, '변경후 가격')}</td>
+                <td data-label="변경후 가격">${product['변경후 가격'] || ''}</td>
                 <td data-label="-5%" class="price-5">${product['-5%'] || ''}</td>
                 <td data-label="-10%" class="price-10">${product['-10%'] || ''}</td>
                 <td data-label="-15%" class="price-15">${product['-15%'] || ''}</td>
@@ -192,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const copyBtn = row.querySelector('.copy-row-btn');
             copyBtn.addEventListener('click', async () => {
                 const field = getSelectedPriceField();
-                const price = resolvePrice(product, field);
+                const price = product[field] || '';
                 const text = `${product['규격'] || ''}\t${price}`;
                 const ok = await copyText(text);
                 showCopyFeedback(copyBtn, ok);
@@ -201,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 단일 검색 (부분 일치, 대소문자 무시)
     function handleSearch() {
         hideNotFound();
         hideMultiWarning();
@@ -210,11 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         const filteredProducts = allProducts.filter(product => {
-            return product['규격'] && product['규격'].toLowerCase().includes(searchTerm);
+            const specMatch = product['규격'] && product['규격'].toLowerCase().includes(searchTerm);
+            return specMatch;
         });
         displayProducts(filteredProducts);
     }
 
+    // 다중 검색 (정확히 일치, 대소문자 무시, 최대 10개)
     function handleMultiSearch() {
         hideNotFound();
         hideMultiWarning();
@@ -246,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 notFound.push(term);
             } else {
                 found.forEach(product => {
-                    const key = `${product['구분'] || ''}_${product['규격']}`;
+                    const key = `${product['구분']}_${product['규격']}`;
                     if (!seen.has(key)) {
                         seen.add(key);
                         matched.push(product);
@@ -263,199 +177,24 @@ document.addEventListener('DOMContentLoaded', () => {
         multiSearchInput.value = '';
         hideMultiWarning();
         hideNotFound();
-        currentResults = [];
         resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-start">검색어를 입력하고 검색 버튼을 누르세요.</td></tr>`;
     }
 
-    async function handleCopyAll() {
-        if (currentResults.length === 0) return;
-        const field = getSelectedPriceField();
-        const lines = currentResults.map(p => `${p['규격'] || ''}\t${resolvePrice(p, field)}`);
-        const ok = await copyText(lines.join('\n'));
-        showCopyFeedback(copyAllButton, ok);
-    }
-
-    async function handleCopyKakaoText() {
-        if (currentResults.length === 0) {
-            showCopyFeedback(copyKakaoTextButton, false);
-            return;
-        }
-        const field = getSelectedPriceField();
-        // text/plain: 탭 구분 (카톡·엑셀 공통)
-        const plain = currentResults.map(p => `${p['규격'] || ''}\t${resolvePrice(p, field)}`).join('\n');
-        // text/html: 엑셀이 열 너비를 더 잘 인식하도록 테이블 형식
-        const htmlRows = currentResults.map(p => {
-            const spec = String(p['규격'] || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            const price = String(resolvePrice(p, field)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-            return `<tr><td style="padding:4px 12px;white-space:nowrap;">${spec}</td><td style="padding:4px 12px;white-space:nowrap;text-align:right;">${price}</td></tr>`;
-        }).join('');
-        const html = `<table><tbody>${htmlRows}</tbody></table>`;
-
-        let ok = false;
-        try {
-            if (navigator.clipboard && window.ClipboardItem) {
-                await navigator.clipboard.write([
-                    new ClipboardItem({
-                        'text/plain': new Blob([plain], { type: 'text/plain' }),
-                        'text/html': new Blob([html], { type: 'text/html' })
-                    })
-                ]);
-                ok = true;
-            } else {
-                ok = await copyText(plain);
-            }
-        } catch (err) {
-            console.error('카톡 값 복사 실패:', err);
-            ok = await copyText(plain);
-        }
-        showCopyFeedback(copyKakaoTextButton, ok);
-    }
-
-    async function handleCopyKakaoImage() {
-        if (currentResults.length === 0) {
-            showCopyFeedback(copyKakaoImageButton, false);
-            return;
-        }
-
-        const field = getSelectedPriceField();
-        const rows = currentResults.map((p, i) => ({
-            no: String(i + 1),
-            spec: p['규격'] || '',
-            price: String(resolvePrice(p, field))
-        }));
-
-        // 다중 검색(10건) 기준 고정 행 수 + 규격 길이에 따른 열 너비 자동 조정
-        const padding = 20;
-        const rowHeight = 42;
-        const headerHeight = 46;
-        const colNoWidth = 60;
-        const colPriceWidth = 150;
-        const FIXED_ROWS = 10;
-        const bodyRows = FIXED_ROWS;
-
-        // 임시 캔버스로 가장 긴 규격 텍스트 너비 측정
-        const measureCanvas = document.createElement('canvas');
-        const measureCtx = measureCanvas.getContext('2d');
-        measureCtx.font = '16px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
-        let maxSpecTextWidth = measureCtx.measureText('규격').width;
-        rows.forEach(row => {
-            const w = measureCtx.measureText(row.spec).width;
-            if (w > maxSpecTextWidth) maxSpecTextWidth = w;
-        });
-        // 여유 패딩 포함, 최소 200 / 최대 420
-        const colSpecWidth = Math.min(420, Math.max(200, Math.ceil(maxSpecTextWidth) + 24));
-
-        const tableWidth = colNoWidth + colSpecWidth + colPriceWidth;
-        const tableHeight = headerHeight + bodyRows * rowHeight;
-        const canvasWidth = tableWidth + padding * 2;
-        const canvasHeight = tableHeight + padding * 2;
-
-        const canvas = document.createElement('canvas');
-        const scale = 3;
-        canvas.width = canvasWidth * scale;
-        canvas.height = canvasHeight * scale;
-        const ctx = canvas.getContext('2d');
-        ctx.scale(scale, scale);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-        const startX = padding;
-        const startY = padding;
-
-        ctx.fillStyle = '#4A90D9';
-        ctx.fillRect(startX, startY, tableWidth, headerHeight);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('No.', startX + colNoWidth / 2, startY + headerHeight / 2);
-        ctx.fillText('규격', startX + colNoWidth + colSpecWidth / 2, startY + headerHeight / 2);
-        ctx.fillText('단가', startX + colNoWidth + colSpecWidth + colPriceWidth / 2, startY + headerHeight / 2);
-
-        ctx.font = '16px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
-        rows.forEach((row, i) => {
-            const y = startY + headerHeight + i * rowHeight;
-            if (i % 2 === 1) {
-                ctx.fillStyle = '#f5f8fc';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            }
-
-            ctx.fillStyle = '#333333';
-            ctx.textAlign = 'center';
-            ctx.fillText(row.no, startX + colNoWidth / 2, y + rowHeight / 2);
-
-            ctx.textAlign = 'left';
-            ctx.fillText(row.spec, startX + colNoWidth + 12, y + rowHeight / 2);
-
-            ctx.textAlign = 'right';
-            ctx.fillText(row.price, startX + colNoWidth + colSpecWidth + colPriceWidth - 10, y + rowHeight / 2);
-        });
-
-        // 빈 행 교차 배경 (크기 통일을 위한 여백)
-        for (let i = rows.length; i < bodyRows; i++) {
-            const y = startY + headerHeight + i * rowHeight;
-            if (i % 2 === 1) {
-                ctx.fillStyle = '#f5f8fc';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            }
-        }
-
-        ctx.strokeStyle = '#333333';
-        ctx.lineWidth = 1;
-        for (let i = 0; i <= bodyRows + 1; i++) {
-            const y = startY + (i === 0 ? 0 : headerHeight + (i - 1) * rowHeight);
-            ctx.beginPath();
-            ctx.moveTo(startX, y);
-            ctx.lineTo(startX + tableWidth, y);
-            ctx.stroke();
-        }
-
-        [0, colNoWidth, colNoWidth + colSpecWidth, tableWidth].forEach(cx => {
-            ctx.beginPath();
-            ctx.moveTo(startX + cx, startY);
-            ctx.lineTo(startX + cx, startY + tableHeight);
-            ctx.stroke();
-        });
-
-        canvas.toBlob(async (blob) => {
-            if (!blob) {
-                showCopyFeedback(copyKakaoImageButton, false);
-                return;
-            }
-            const ok = await copyImageBlob(blob);
-            if (ok) {
-                showCopyFeedback(copyKakaoImageButton, true);
-            } else {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = '가격표.png';
-                a.click();
-                URL.revokeObjectURL(url);
-                showCopyFeedback(copyKakaoImageButton, true);
-            }
-        }, 'image/png');
-    }
-
+    // Event Listeners
     searchButton.addEventListener('click', handleSearch);
     searchInput.addEventListener('keyup', (event) => {
-        if (event.key === 'Enter') handleSearch();
+        if (event.key === 'Enter') {
+            handleSearch();
+        }
     });
 
-    if (multiSearchButton) multiSearchButton.addEventListener('click', handleMultiSearch);
-    if (multiResetButton) multiResetButton.addEventListener('click', handleMultiReset);
-    if (copyAllButton) copyAllButton.addEventListener('click', handleCopyAll);
-    if (copyKakaoTextButton) copyKakaoTextButton.addEventListener('click', handleCopyKakaoText);
-    if (copyKakaoImageButton) copyKakaoImageButton.addEventListener('click', handleCopyKakaoImage);
+    if (multiSearchButton) {
+        multiSearchButton.addEventListener('click', handleMultiSearch);
+    }
+    if (multiResetButton) {
+        multiResetButton.addEventListener('click', handleMultiReset);
+    }
 
-    initUpdateHistory();
+    // Initial fetch of products when the page loads
     fetchProducts();
 });
