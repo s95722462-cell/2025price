@@ -4,21 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MEAK 제품 가격 검색</title>
-    <!-- Bootstrap CSS CDN for responsive design -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container mt-5">
         <h1 class="mb-4 text-center">MEAK 제품 가격 검색 <small class="text-muted" style="font-size: 0.5em; margin-left: 20px; float: right;">made by 알프</small></h1>
-
-        <div class="alert alert-info d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-4" role="alert">
-            <div>
-                <strong>가격표 기준일: 2026-05-15</strong>
-                <span class="d-block d-sm-inline ms-sm-2">PLC 품목 147건 가격 변경, 신규 57건 추가 반영</span>
-            </div>
-            <span class="badge bg-primary mt-2 mt-sm-0">UPDATED</span>
-        </div>
 
         <!-- 단일 검색 (부분 일치) -->
         <div class="input-group mb-2">
@@ -43,7 +34,8 @@
         <div class="alert alert-warning py-2 d-none" id="notFoundBox" role="alert"></div>
 
         <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
-            <button class="btn btn-outline-secondary" id="copyAllButton" type="button">검색결과 전체 복사</button>
+            <button class="btn btn-outline-success" id="copyKakaoTextButton" type="button">카톡 값 복사</button>
+            <button class="btn btn-outline-primary" id="copyKakaoImageButton" type="button">카톡 사진 복사</button>
             <div class="d-flex align-items-center gap-2 ms-sm-auto">
                 <label for="priceTypeSelect" class="form-label mb-0">복사할 가격</label>
                 <select id="priceTypeSelect" class="form-select form-select-sm" style="width:auto;">
@@ -77,7 +69,6 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
