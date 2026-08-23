@@ -264,14 +264,13 @@ document.addEventListener('DOMContentLoaded', () => {
             price: String(resolvePrice(p, field))
         }));
 
-        // 다중 검색(10건) 기준 고정 행 수 + 규격 길이에 따른 열 너비 자동 조정
+        // 검색 결과 개수만큼만 행 생성 (빈 행 없음)
         const padding = 20;
         const rowHeight = 42;
         const headerHeight = 46;
         const colNoWidth = 60;
         const colPriceWidth = 150;
-        const FIXED_ROWS = 10;
-        const bodyRows = FIXED_ROWS;
+        const bodyRows = rows.length;
 
         // 임시 캔버스로 가장 긴 규격 텍스트 너비 측정
         const measureCanvas = document.createElement('canvas');
@@ -335,18 +334,6 @@ document.addEventListener('DOMContentLoaded', () => {
             ctx.textAlign = 'right';
             ctx.fillText(row.price, startX + colNoWidth + colSpecWidth + colPriceWidth - 10, y + rowHeight / 2);
         });
-
-        // 빈 행 교차 배경 (크기 통일을 위한 여백)
-        for (let i = rows.length; i < bodyRows; i++) {
-            const y = startY + headerHeight + i * rowHeight;
-            if (i % 2 === 1) {
-                ctx.fillStyle = '#f5f8fc';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(startX, y, tableWidth, rowHeight);
-            }
-        }
 
         ctx.strokeStyle = '#333333';
         ctx.lineWidth = 1;
