@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let allProducts = [];
     let currentResults = [];
+    let isMultiExactResult = false;
 
     async function fetchProducts() {
         try {
@@ -117,8 +118,18 @@ document.addEventListener('DOMContentLoaded', () => {
         multiSearchWarning.textContent = text;
     }
 
-    function displayProducts(products) {
+    function displayProducts(products, isMultiExact) {
         currentResults = products;
+        if (isMultiExact !== undefined) isMultiExactResult = isMultiExact;
+
+        if (isMultiExactResult && products.length > 0) {
+            copyKakaoTextButton.style.display = 'inline-block';
+            copyKakaoImageButton.style.display = 'inline-block';
+        } else {
+            copyKakaoTextButton.style.display = 'none';
+            copyKakaoImageButton.style.display = 'none';
+        }
+
         resultsTableBody.innerHTML = '';
         if (products.length === 0) {
             resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-center">검색 결과가 없습니다.</td></tr>`;
@@ -160,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredProducts = allProducts.filter(product => {
             return product['규격'] && product['규격'].toLowerCase().includes(searchTerm);
         });
-        displayProducts(filteredProducts);
+        displayProducts(filteredProducts, false);
     }
 
     function handleMultiSearch() {
@@ -203,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        displayProducts(matched);
+        displayProducts(matched.slice(0, 10), true);
         showNotFound(notFound);
     }
 
@@ -212,6 +223,9 @@ document.addEventListener('DOMContentLoaded', () => {
         hideMultiWarning();
         hideNotFound();
         currentResults = [];
+        isMultiExactResult = false;
+        copyKakaoTextButton.style.display = 'none';
+        copyKakaoImageButton.style.display = 'none';
         resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-start">검색어를 입력하고 검색 버튼을 누르세요.</td></tr>`;
     }
 
