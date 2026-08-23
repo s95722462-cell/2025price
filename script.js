@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 검색 결과 개수만큼만 행 생성 (빈 행 없음)
         const padding = 20;
+        const titleHeight = 40;
         const rowHeight = 42;
         const headerHeight = 46;
         const colNoWidth = 60;
@@ -287,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tableWidth = colNoWidth + colSpecWidth + colPriceWidth;
         const tableHeight = headerHeight + bodyRows * rowHeight;
         const canvasWidth = tableWidth + padding * 2;
-        const canvasHeight = tableHeight + padding * 2;
+        const canvasHeight = titleHeight + tableHeight + padding * 2;
 
         const canvas = document.createElement('canvas');
         const scale = 3;
@@ -300,7 +301,14 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
         const startX = padding;
-        const startY = padding;
+        const startY = padding + titleHeight;
+
+        // 상단 타이틀: 미쓰비시 가격
+        ctx.fillStyle = '#1e3a8a';
+        ctx.font = 'bold 20px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('미쓰비시 가격', startX + tableWidth / 2, padding + titleHeight / 2);
 
         ctx.fillStyle = '#4A90D9';
         ctx.fillRect(startX, startY, tableWidth, headerHeight);
