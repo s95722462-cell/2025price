@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchButton = document.getElementById('searchButton');
     const resultsTableBody = document.getElementById('resultsTableBody');
     const priceTypeSelect = document.getElementById('priceTypeSelect');
+    const copyAllButton = document.getElementById('copyAllButton');
 
     const multiSearchInput = document.getElementById('multiSearchInput');
     const multiSearchButton = document.getElementById('multiSearchButton');
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const MAX_MULTI_TERMS = 10;
 
     let allProducts = [];
+    let currentResults = [];
 
     // Function to fetch product data
     async function fetchProducts() {
@@ -82,6 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to display products in the table
     function displayProducts(products) {
+        currentResults = products;
         resultsTableBody.innerHTML = ''; // Clear previous results
         if (products.length === 0) {
             resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-center">검색 결과가 없습니다.</td></tr>`;
@@ -180,6 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-start">검색어를 입력하고 검색 버튼을 누르세요.</td></tr>`;
     }
 
+    // 검색 결과 전체를 '규격 [탭] 선택한 가격' 형태로 한번에 복사
+    async function handleCopyAll() {
+        if (currentResults.length === 0) return;
+        const field = getSelectedPriceField();
+        const lines = currentResults.map(p => `${p['규격'] || ''}\t${p[field] || ''}`);
+        const ok = await copyText(lines.join('\n'));
+        showCopyFeedback(copyAllButton, ok);
+    }
+
     // Event Listeners
     searchButton.addEventListener('click', handleSearch);
     searchInput.addEventListener('keyup', (event) => {
@@ -193,6 +205,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (multiResetButton) {
         multiResetButton.addEventListener('click', handleMultiReset);
+    }
+
+    if (copyAllButton) {
+        copyAllButton.addEventListener('click', handleCopyAll);
     }
 
     // Initial fetch of products when the page loads
