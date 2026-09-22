@@ -11,12 +11,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const multiResetButton = document.getElementById('multiResetButton');
     const multiSearchWarning = document.getElementById('multiSearchWarning');
     const notFoundBox = document.getElementById('notFoundBox');
+    const correctedBox = document.getElementById('correctedBox');
+    const multiSearchSummary = document.getElementById('multiSearchSummary');
 
-    const MAX_MULTI_TERMS = 10;
+    const imageOcrInput = document.getElementById('imageOcrInput');
+    const imageOcrButton = document.getElementById('imageOcrButton');
+    const imageOcrStatus = document.getElementById('imageOcrStatus');
+
+    const MAX_MULTI_TERMS = 30;
 
     let allProducts = [];
     let currentResults = [];
     let isMultiExactResult = false;
+    let specByLength = new Map();
+
+    // OCR/오타로 흔히 헷갈리는 문자쌍 (실제 오인식 사례 기반: 6<->B, B<->8, 5<->S)
+    const CONFUSABLE_PAIRS = [['6', 'B'], ['B', '8'], ['5', 'S'], ['0', 'O'], ['1', 'I'], ['2', 'Z']];
+    const CONFUSABLE_ALLOWED = new Set();
+    CONFUSABLE_PAIRS.forEach(([a, b]) => { CONFUSABLE_ALLOWED.add(a + b); CONFUSABLE_ALLOWED.add(b + a); });
+
+    function buildSpecIndex() {
+        specByLength = new Map();
+        const seen = new Set();
+        allProducts.forEach(p => {
+            const spec = p['규격'];
+            if (!spec) return;
+            const upper = spec.toUpperCase();
+            if (seen.has(upper)) return;
+            seen.add(upper);
+            const len = upper.length;
+            if (!specByLength.has(len)) specByLength.set(len, []);
+            specByLength.get(len).push(upper);
+        });
+    }
+
+    // 정확히 일치하지 않는 규격을, 실제 카탈로그와 대조해 '유일하게' 복구 가능한 경우에만 보정
+    // (같은 길이 + 다른 글자가 전부 CONFUSABLE_PAIRS 안에 있고 + 후보가 정확히 1개일 때만 채택)
+    function findFuzzyCorrection(term, maxDiff = 3) {
+        const t = term.toUpperCase();
+        const candidates = specByLength.get(t.length);
+        if (!candidates) return null;
+        const matches = [];
+        for (const s of candidates) {
+            let diff = 0, ok = true;
+            for (let i = 0; i < t.length; i++) {
+                if (t[i] === s[i]) continue;
+                if (CONFUSABLE_ALLOWED.has(t[i] + s[i])) {
+                    diff++;
+                    if (diff > maxDiff) { ok = false; break; }
+                } else {
+                    ok = false;
+                    break;
+                }
+            }
+            if (ok && diff > 0) {
+                matches.push(s);
+                if (matches.length > 1) break;
+            }
+        }
+        return matches.length === 1 ? matches[0] : null;
+    }
 
     async function fetchProducts() {
         try {
@@ -25,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             allProducts = await response.json();
+            buildSpecIndex();
             resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-start">검색어를 입력하고 검색 버튼을 누르세요.</td></tr>`;
         } catch (error) {
             console.error('Error fetching product data:', error);
@@ -108,6 +163,30 @@ document.addEventListener('DOMContentLoaded', () => {
         notFoundBox.innerHTML = `일치하는 항목이 없습니다: ${terms.join(', ')}`;
     }
 
+    function hideSummary() {
+        multiSearchSummary.classList.add('d-none');
+        multiSearchSummary.innerHTML = '';
+    }
+
+    function showSummary(successCount, failCount) {
+        multiSearchSummary.classList.remove('d-none');
+        multiSearchSummary.innerHTML = `검색 결과: 성공 <strong>${successCount}</strong>개 / 실패 <strong>${failCount}</strong>개`;
+    }
+
+    function hideCorrected() {
+        correctedBox.classList.add('d-none');
+        correctedBox.innerHTML = '';
+    }
+
+    function showCorrected(pairs) {
+        if (!pairs || pairs.length === 0) {
+            hideCorrected();
+            return;
+        }
+        correctedBox.classList.remove('d-none');
+        correctedBox.innerHTML = `자동 보정됨: ${pairs.map(p => `${p.from} → ${p.to}`).join(', ')}`;
+    }
+
     function hideMultiWarning() {
         multiSearchWarning.classList.add('d-none');
         multiSearchWarning.textContent = '';
@@ -163,6 +242,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleSearch() {
         hideNotFound();
         hideMultiWarning();
+        hideCorrected();
+        hideSummary();
         const searchTerm = searchInput.value.toLowerCase().trim();
         if (!searchTerm) {
             resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-center">검색어를 입력해주세요.</td></tr>`;
@@ -177,6 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleMultiSearch() {
         hideNotFound();
         hideMultiWarning();
+        hideCorrected();
+        hideSummary();
 
         const rawInput = multiSearchInput.value;
         let terms = rawInput
@@ -196,11 +279,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const matched = [];
         const notFound = [];
+        const corrected = [];
         const seen = new Set();
 
         terms.forEach(term => {
             const termLower = term.toLowerCase();
-            const found = allProducts.filter(p => p['규격'] && p['규격'].toLowerCase() === termLower);
+            let found = allProducts.filter(p => p['규격'] && p['규격'].toLowerCase() === termLower);
+
+            if (found.length === 0) {
+                const fix = findFuzzyCorrection(term);
+                if (fix) {
+                    const fixedFound = allProducts.filter(p => p['규격'] && p['규격'].toUpperCase() === fix);
+                    if (fixedFound.length > 0) {
+                        found = fixedFound;
+                        corrected.push({ from: term, to: fixedFound[0]['규격'] });
+                    }
+                }
+            }
+
             if (found.length === 0) {
                 notFound.push(term);
             } else {
@@ -214,19 +310,83 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        displayProducts(matched.slice(0, 10), true);
+        displayProducts(matched.slice(0, MAX_MULTI_TERMS), true);
+        showSummary(terms.length - notFound.length, notFound.length);
+        showCorrected(corrected);
         showNotFound(notFound);
     }
 
     function handleMultiReset() {
         multiSearchInput.value = '';
+        if (imageOcrInput) imageOcrInput.value = '';
+        if (imageOcrStatus) imageOcrStatus.textContent = '';
         hideMultiWarning();
         hideNotFound();
+        hideCorrected();
+        hideSummary();
         currentResults = [];
         isMultiExactResult = false;
         copyKakaoTextButton.style.display = 'none';
         copyKakaoImageButton.style.display = 'none';
         resultsTableBody.innerHTML = `<tr><td colspan="8" class="text-start">검색어를 입력하고 검색 버튼을 누르세요.</td></tr>`;
+    }
+
+    // 사진 속 표(규격 + 수량 등)에서 규격만 뽑아 다중 검색창에 채움
+    async function handleImageOcr() {
+        const file = imageOcrInput.files && imageOcrInput.files[0];
+        if (!file) {
+            imageOcrStatus.textContent = '이미지를 먼저 선택하세요.';
+            return;
+        }
+        if (typeof Tesseract === 'undefined') {
+            imageOcrStatus.textContent = 'OCR 라이브러리를 불러오지 못했습니다.';
+            return;
+        }
+
+        imageOcrButton.disabled = true;
+        imageOcrStatus.textContent = '인식 중... 0%';
+
+        try {
+            const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+                logger: (m) => {
+                    if (m.status === 'recognizing text' && typeof m.progress === 'number') {
+                        imageOcrStatus.textContent = `인식 중... ${Math.round(m.progress * 100)}%`;
+                    }
+                }
+            });
+
+            // 각 줄의 첫 토큰을 규격으로 간주 (뒤의 수량 등은 무시)
+            const specs = text
+                .split('\n')
+                .map(line => line.trim())
+                .filter(Boolean)
+                .map(line => {
+                    const match = line.match(/^([A-Za-z0-9][A-Za-z0-9\-/.]*)/);
+                    return match ? match[1] : null;
+                })
+                .filter(Boolean)
+                .slice(0, MAX_MULTI_TERMS);
+
+            if (specs.length === 0) {
+                imageOcrStatus.textContent = '규격을 인식하지 못했습니다. 다른 사진으로 시도해주세요.';
+                return;
+            }
+
+            multiSearchInput.value = specs.join('\n');
+            imageOcrStatus.textContent = `인식 완료: ${specs.length}개 항목 (틀린 부분은 직접 수정 후 다시 검색하세요)`;
+
+            const collapseEl = document.getElementById('multiSearchBox');
+            if (collapseEl && window.bootstrap) {
+                bootstrap.Collapse.getOrCreateInstance(collapseEl).show();
+            }
+
+            handleMultiSearch();
+        } catch (err) {
+            console.error('이미지 인식 실패:', err);
+            imageOcrStatus.textContent = '이미지 인식에 실패했습니다.';
+        } finally {
+            imageOcrButton.disabled = false;
+        }
     }
 
     async function handleCopyKakaoText() {
@@ -401,6 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (multiSearchButton) multiSearchButton.addEventListener('click', handleMultiSearch);
     if (multiResetButton) multiResetButton.addEventListener('click', handleMultiReset);
+    if (imageOcrButton) imageOcrButton.addEventListener('click', handleImageOcr);
     if (copyKakaoTextButton) copyKakaoTextButton.addEventListener('click', handleCopyKakaoText);
     if (copyKakaoImageButton) copyKakaoImageButton.addEventListener('click', handleCopyKakaoImage);
 
